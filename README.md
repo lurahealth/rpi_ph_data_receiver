@@ -8,3 +8,5 @@ be calibrated prior to interfacing with this system, if calibrated pH values are
 
 The Raspberry Pi Zero W is intended to be embedded within a 3D printed case, attached to an 8x1 Neopixel strip and powered by a 
 5000 mAh power bank. 
+
+![RPi Case](https://github.com/lurahealth/rpi_ph_data_receiver/blob/master/images/case_transparent1.png?raw=true)
