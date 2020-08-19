@@ -1,0 +1,18 @@
+This test was performed by placing the raspberry pi receiver on a the desk
+directly next to an nRF52 DK, and the nRF52 DK was flashed with the client
+firmware application. The protocol is read data, advertise, and either
+send the data if a connection is made or add the data to a buffer and send
+all buffered data the next time a connection is made. The sleep interval
+was 15 minutes between reading data and advertising. 
+
+Results of this test showed that the RPi and the nRF52 DK can handle the
+extended period of sleep, without fatal errors on either end. Also, every
+connection was succesful through the duration of the test so no buffered
+data was sent or received. 
+
+The RPi was left on the desk at approximately 8:00pm. When examined the
+next morning, the python application was still running without error.
+However, the RPi could not connect via ssh and a reboot was required
+to view the csv files. There may be an issue in which extended intervals
+of perpetual BLE scanning could cause problems for other services, like
+networking. 
