@@ -1,0 +1,7 @@
+2020-12-03 13:47:59, Failed to connect to peripheral df:a7:e8:b4:c9:9c, addr type: random
+2020-12-03 13:52:32, Device connected
+2020-12-03 13:52:35, Device disconnected
+2020-12-03 13:52:37, Device connected
+2020-12-03 13:53:07, Device disconnected
+2020-12-03 13:53:10, Failed to connect to peripheral df:a7:e8:b4:c9:9c, addr type: random
+2020-12-03 13:53:19, Device connected

@@ -33,7 +33,7 @@ YELLOW = (255,255,0)
 
 # Variables for BLE connections
 global sensor_obj
-sensor_name   = "Lura_Test_Dan"
+sensor_name   = "Lura"
 rx_uuid       = "6e400003-b5a3-f393-e0a9-e50e24dcca9e"
 tx_uuid       = "6e400002-b5a3-f393-e0a9-e50e24dcca9e"
 notify_uuid   = "00002902-0000-1000-8000-00805f9b34fb"
@@ -47,12 +47,12 @@ CST = timezone("Asia/Hong_Kong")
 fmt = "%Y-%m-%d %H:%M:%S" 
 
 # Variables for packet CSV storage
-csv_header   = "Time (YYYY-MM-DD HH-MM-SS), pH (calibrated), temp (ADC), batt (ADC), pH (ADC)"
+csv_header   = "Time (YYYY-MM-DD HH-MM-SS), pH (calibrated), temp (mv), batt (mv), pH (mv)"
 fpath        = "/home/pi/ph_receiver/csv_files/"
-fname        = fpath + "data.csv"
-foutpath     = "/home/pi/ph_receiver/"
-foutname     = foutpath + "output.csv"
-fifteen_mins = timedelta(minutes = 15)
+fname        = fpath # append with name of device
+foutpath     = "/home/pi/ph_receiver/event_outputs/"
+foutname     = foutpath # Append with name of device
+fifteen_mins = timedelta(minutes = 5)
 
 global remaining_packs
 global total_packs
@@ -63,11 +63,12 @@ total_packs     = 1
 data_buffer     = list()
 
 # Set up the data csv file with appropriate column headers if they don't exist
-f = open(fname, "a+")
-f.seek(0)
-if csv_header not in f.readline():
-    f.write(csv_header + "\n")
-f.close()
+def write_csv_header():
+    f = open(fname, "a+")
+    f.seek(0)
+    if csv_header not in f.readline():
+        f.write(csv_header + "\n")
+    f.close()
 
 def exit_handler():
      print("PROGRAM ENDING\n")
@@ -177,9 +178,29 @@ def log_connection_and_time():
 
 scanner = Scanner().withDelegate(ScanDelegate())
                 
+def check_for_stored_device_name():
+   global prev_connection 
+   global sensor_name
+   prev_connection = False        
+   if os.stat("device_name.txt").st_size != 0:
+        with open("device_name.txt") as f:
+            stored_name = f.readline()
+            print("stored name: " + stored_name)
+            sensor_name = stored_name
+        prev_connection = True
+
+def store_device_name(name):
+    f = open("device_name.txt", "w")
+    f.write(name)
+    f.close()
+
 def find_and_connect():
     global connected
+    global fname
+    global foutname
     while not connected:
+        check_for_stored_device_name()
+        print("device name in file: " + sensor_name)
         scanner.clear()
         scanner.start()
         pixels[SCAN] = GREEN
@@ -192,14 +213,20 @@ def find_and_connect():
                     pixels[SCAN]  = BLANK
                     print("Found lura device")
                     scanner.stop()
+                    fname = fpath + dev.getValueText(9) + ".csv"
+                    if not prev_connection:
+                        store_device_name(dev.getValueText(9))
+                    foutname = foutpath + dev.getValueText(9) + ".txt"
                     sensor_obj.connect(dev.addr, dev.addrType)
                     print("Connected to lura health device")
+                    write_csv_header()
                     connected = True
                     pixels[CONN] = GREEN
                     print("Enabling notifications")
                     log_connection_and_time()
                     sensor_obj.writeCharacteristic(notify_handle, b'\x01\x00', True)
                     pixels[FOUND] = BLANK
+
 
 # Init script status to on
 pixels.fill((0,0,0))

@@ -1,0 +1,5 @@
+2021-01-06 10:58:36, Device connected
+2021-01-06 10:58:36, Bluetooth command failed (code: 3, error: Attribute can't be written)
+2021-01-06 10:59:30, Failed to connect to peripheral 64:b2:10:80:4a:ae, addr type: random
+2021-01-06 11:00:12, Device connected
+2021-01-06 11:00:12, Bluetooth command failed (code: 3, error: Attribute can't be written)

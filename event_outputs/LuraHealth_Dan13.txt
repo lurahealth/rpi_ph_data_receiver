@@ -1,0 +1,2 @@
+2020-11-28 12:18:57, Device connected
+2020-11-28 12:19:07, Device disconnected
