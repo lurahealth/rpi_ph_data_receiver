@@ -48,9 +48,9 @@ fmt = "%Y-%m-%d %H:%M:%S"
 
 # Variables for packet CSV storage
 csv_header   = "Time (YYYY-MM-DD HH-MM-SS), pH (calibrated), temp (mv), batt (mv), pH (mv)"
-fpath        = "/home/pi/Desktop/csv_files/"
+fpath        = "/home/pi/Desktop/calibration_csv_files/"
 fname        = fpath # append with name of device
-foutpath     = "/home/pi/Desktop/event_outputs/"
+foutpath     = "/home/pi/Desktop/calibration_event_outputs/"
 foutname     = foutpath # Append with name of device
 fifteen_mins = timedelta(minutes = 5)
 
@@ -58,6 +58,9 @@ global remaining_packs
 global total_packs
 global data_buffer
 global f
+global receiving_buffer
+global in_demo_proto_state
+global in_precal_state
 remaining_packs = 1
 total_packs     = 1
 data_buffer     = list()
@@ -71,7 +74,7 @@ def write_csv_header():
     f.close()
 
 def exit_handler():
-     print("PROGRAM ENDING\n")
+     # print("PROGRAM ENDING\n")
      pixels.fill((0,0,0))
      pixels[ERR] = RED
      t.sleep(1)
@@ -81,12 +84,84 @@ atexit.register(exit_handler)
 # Send a packet saying "DONE" after all the data has been read in the case
 # of buffered data packets
 def send_done_packet():
-    print("Sending done packet")
+    global receiving_buffer
+    receiving_buffer = False
+    
+    print("Buffered data has been stored and logged. Continuing to calibration...")
     global sensor_obj
     tx_char_list = sensor_obj.getCharacteristics(uuid=tx_uuid)
     tx_char = tx_char_list[0]
     tx_char.write("DONE".encode('utf-8'), False)
-    print("DONE packet sent \n")
+    # print("DONE packet sent \n")
+    
+    
+def read_cal_point(cal_point):
+    global sensor_obj
+    tx_char_list = sensor_obj.getCharacteristics(uuid=tx_uuid)
+    tx_char = tx_char_list[0]
+    if cal_point == 1:
+        tx_char.write("PT1_10.0".encode('utf-8'), False)
+        print("\nStep 1: Please dip the Lura Health retainer into pH 10 buffer. Swirl the retainer briefly.")
+        print("        Data will be printed for you to view. Press ENTER when you ready to store data as a calibration point.")
+        input(" ")
+        
+    if cal_point == 2:
+        tx_char.write("PT2_7.0".encode('utf-8'), False)
+        print("\nStep 1: Please dip the Lura Health retainer into pH 7 buffer. Swirl the retainer briefly.")
+        print("        Data will be printed for you to view. Press ENTER when you ready to store data as a calibration point.")
+        input(" ")
+        
+    if cal_point == 3:
+        tx_char.write("PT3_4.0".encode('utf-8'), False)
+        print("\nStep 1: Please dip the Lura Health retainer into pH 4 buffer. Swirl the retainer briefly.")
+        print("        Data will be printed for you to view. Press ENTER when you ready to store data as a calibration point.")
+        input(" ")
+        
+def print_cal_instructions():
+    print("\n*** Data will now be printed to this screen. New data is read every second.")
+    print("    Data will be continually printed until you press the ENTER key.")
+    print("    When you press the ENTER key, the 3 point calibration will start.")
+    print(" ")
+    print("*** Rows of data contain: pH value, temperature (*C), battery level (mV), pH value (mV).")
+    print("    Before pressing ENTER and while data is printed, you may briefly test the device")
+    print("    in pH buffers. Once you press the ENTER key, one set of pH data will be printed per calibration point.")
+    input("\n\n        (press ENTER when you are finished reading the above instructions)\n")
+    print("*** Starting to print data. Press ENTER when you are ready to begin calibration...\n")
+    t.sleep(1)
+        
+def begin_demo_proto():
+    global in_precal_state
+    global in_demo_proto_state
+    global sensor_obj
+    tx_char_list = sensor_obj.getCharacteristics(uuid=tx_uuid)
+    tx_char = tx_char_list[0]
+    tx_char.write("DEMO_PROTO".encode('utf-8'), False)
+    # begin_cal()
+    in_precal_state = True
+    in_demo_proto_state = True
+    print_cal_instructions()
+    
+    
+def begin_client_proto():
+    global sensor_obj
+    tx_char_list = sensor_obj.getCharacteristics(uuid=tx_uuid)
+    tx_char = tx_char_list[0]
+    tx_char.write("CLIENT_PROTO".encode('utf-8'), False)
+    sleep(0.2)
+    tx_char.write("STAYON".encode('utf-8'), False)
+
+
+def begin_cal():
+    global sensor_obj
+    tx_char_list = sensor_obj.getCharacteristics(uuid=tx_uuid)
+    tx_char = tx_char_list[0]
+    tx_char.write("STARTCAL3".encode('utf-8'), False)
+    print("\n*** 3 Point Calibration started succesfully")
+    read_cal_point(1)
+    read_cal_point(2)
+    read_cal_point(3)
+  
+
 
 # Store data using back dating timestamp protocol when writing to csv file, if 
 # multiple packets are sent
@@ -99,14 +174,21 @@ def process_and_store_data(data):
     global total_packs
     global data_buffer
     global connected
-
-    print("remaining packs = " + str(remaining_packs))
+    global receiving_buffer
+    global in_demo_proto_state
+    
+    if "TOTAL" in data:
+        receiving_buffer = True
+        in_demo_proto_state = False
+        
+    if "TOTAL" not in data and receiving_buffer == False and in_demo_proto_state == False:
+        begin_demo_proto()
 
     if "TOTAL" in data:
+        print("*** Buffered data is being received, one moment...")
         # Parse number of expected packets and store in expected_packets
         total_packs = int(data.split('_')[1])
         remaining_packs = total_packs
-        print("receiving buffered data, total packs = " + str(total_packs))
         # Open program status file, write, close
         orig_time = datetime.now(CST)
         fout = open(foutname, "a+")
@@ -121,6 +203,7 @@ def process_and_store_data(data):
             f = open(fname, "a+")
             f.write(str(time.strftime(fmt + "," +  data)))
             f.close()
+            print(str(time.strftime(fmt + "," +  data))[:-1]) # Remove trailing \n
         else:
            data_buffer.append(str(time.strftime(fmt + "," +  data))) 
            remaining_packs -= 1
@@ -138,11 +221,12 @@ def process_and_store_data(data):
     if remaining_packs == 1:
         # Iterate through buffer and write data to file
         if total_packs > 1:
+            receiving_buffer = False
             total_packs = 1
             time = datetime.now(CST)
             adj_time = time - ((remaining_packs - 1) * fifteen_mins)
             data_buffer.append(str(adj_time.strftime(fmt + "," +  data))) 
-            print("*** WRITING TO FILE USING BUFFERED DATA ****")
+            # print("*** WRITING TO FILE USING BUFFERED DATA ****")
             f = open(fname, "a+")
             for data in data_buffer:
                     f.write(data)
@@ -150,6 +234,10 @@ def process_and_store_data(data):
             for data in range(total_packs):
                 data_buffer[data] = None
             data_buffer.clear()
+            #  Start demo protocol and begin calibration
+            print("*** Buffered data has been stored and logged. Continuing to calibration...")
+            in_demo_proto_state = True
+            begin_demo_proto()
 
 # Callback when notifications are received, calls process_and_store_data
 class NotifyDelegate(DefaultDelegate):
@@ -158,7 +246,7 @@ class NotifyDelegate(DefaultDelegate):
 
     # Read data and store in csv file as appropriate
     def handleNotification(self, cHandle, data):
-        print("** Notification received")
+        # print("** Notification received")
         pixels[DATA] = GREEN
         process_and_store_data(data.decode("utf-8"))
         pixels[DATA] = BLANK
@@ -198,7 +286,14 @@ def find_and_connect():
     global connected
     global fname
     global foutname
+    global receiving_buffer
+    global in_demo_proto_state
+    global in_precal_state
+    
     while not connected:
+        receiving_buffer    = False
+        in_demo_proto_state = False
+        in_precal_state     = False
         scanner.clear()
         scanner.start()
         pixels[SCAN] = GREEN
@@ -209,17 +304,17 @@ def find_and_connect():
                 if sensor_name in dev.getValueText(9):
                     pixels[FOUND] = GREEN
                     pixels[SCAN]  = BLANK
-                    print("Found lura device")
+                    print("*** Found lura device")
                     scanner.stop()
                     fname = fpath + dev.getValueText(9) + ".csv"
                     foutname = foutpath + dev.getValueText(9) + ".txt"
                     sensor_obj.connect(dev.addr, dev.addrType)
-                    print("Connected to lura health device")
+                    print("*** Connected to: " + str(dev.getValueText(9)))
                     write_csv_header()
-                    store_device_name(dev.getValueText)
+                    store_device_name(dev.getValueText(9))
                     connected = True
                     pixels[CONN] = GREEN
-                    print("Enabling notifications")
+                    # print("*** Preparing to receive data...")
                     log_connection_and_time()
                     sensor_obj.writeCharacteristic(notify_handle, b'\x01\x00', True)
                     pixels[FOUND] = BLANK
@@ -227,9 +322,15 @@ def find_and_connect():
 
 # Init script status to on
 pixels.fill((0,0,0))
-t.sleep(1)
+t.sleep(0.2)
 pixels[PWR]  = GREEN
 pixels[CONN] = RED
+
+print("\n* * * * * * * * * * * * * * * * * * * * * * * * * * *")
+print("*         Beginning 3 Point Calibration             *")
+print("* * * * * * * * * * * * * * * * * * * * * * * * * * *")
+print(" ")
+print("*** BLE Scanning for Lura device...")
 
 # Continually scan and connect to device if available
 while True:
@@ -238,6 +339,8 @@ while True:
         if sensor_obj.waitForNotifications(3.0):
             pass
     except Exception as e:
+        global in_demo_proto_state 
+        in_demo_proto_state = False
         time = datetime.now(CST)
         fout = open(foutname, "a+")
         fout.write(str(time.strftime(fmt)))
@@ -257,8 +360,10 @@ while True:
         elif "disconnected" in str(e):
             connected = False
             pixels[CONN] = RED
-            print(e)
-            print("Restarting now\n")
+            # print(e)
+            print("!!! * * * * * * * * * * * * * !!!")
+            print("!!!    BLE connection lost    !!!")
+            print("!!! * * * * * * * * * * * * * !!!")
             remaining_packs = 1
             total_packs = 1 
             continue
