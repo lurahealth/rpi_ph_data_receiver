@@ -11,6 +11,113 @@ import board
 import neopixel
 import time as t
 import atexit
+from scipy import stats
+import subprocess
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+# Found from https://simondlevy.academic.wlu.edu/files/software/kbhit.py
+# 
+# Implementation for non-blocking keyboard polling
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+import os
+
+# Windows
+if os.name == 'nt':
+    import msvcrt
+
+# Posix (Linux, OS X)
+else:
+    import sys
+    import termios
+    import atexit
+    from select import select
+
+
+class KBHit:
+
+    def __init__(self):
+        '''Creates a KBHit object that you can call to do various keyboard things.
+        '''
+
+        if os.name == 'nt':
+            pass
+
+        else:
+
+            # Save the terminal settings
+            self.fd = sys.stdin.fileno()
+            self.new_term = termios.tcgetattr(self.fd)
+            self.old_term = termios.tcgetattr(self.fd)
+
+            # New terminal setting unbuffered
+            self.new_term[3] = (self.new_term[3] & ~termios.ICANON & ~termios.ECHO)
+            termios.tcsetattr(self.fd, termios.TCSAFLUSH, self.new_term)
+
+            # Support normal-terminal reset at exit
+            atexit.register(self.set_normal_term)
+
+
+    def set_normal_term(self):
+        ''' Resets to normal terminal.  On Windows this is a no-op.
+        '''
+
+        if os.name == 'nt':
+            pass
+
+        else:
+            termios.tcsetattr(self.fd, termios.TCSAFLUSH, self.old_term)
+
+
+    def getch(self):
+        ''' Returns a keyboard character after kbhit() has been called.
+            Should not be called in the same program as getarrow().
+        '''
+
+        s = ''
+
+        if os.name == 'nt':
+            return msvcrt.getch().decode('utf-8')
+
+        else:
+            return sys.stdin.read(1)
+
+
+    def getarrow(self):
+        ''' Returns an arrow-key code after kbhit() has been called. Codes are
+        0 : up
+        1 : right
+        2 : down
+        3 : left
+        Should not be called in the same program as getch().
+        '''
+
+        if os.name == 'nt':
+            msvcrt.getch() # skip 0xE0
+            c = msvcrt.getch()
+            vals = [72, 77, 80, 75]
+
+        else:
+            c = sys.stdin.read(3)[2]
+            vals = [65, 67, 66, 68]
+
+        return vals.index(ord(c.decode('utf-8')))
+
+
+    def kbhit(self):
+        ''' Returns True if keyboard character was hit, False otherwise.
+        '''
+        if os.name == 'nt':
+            return msvcrt.kbhit()
+
+        else:
+            dr,dw,de = select([sys.stdin], [], [], 0)
+            return dr != []
+        
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+
+# non-blocking keyboard input stuff
+kb = KBHit()
 
 # Variables for neopixel strip
 #
@@ -61,6 +168,13 @@ global f
 global receiving_buffer
 global in_demo_proto_state
 global in_precal_state
+global PT1mv
+global PT2mv
+global PT3mv
+global PT1temp
+global PT2temp
+global PT3temp
+
 remaining_packs = 1
 total_packs     = 1
 data_buffer     = list()
@@ -74,7 +188,12 @@ def write_csv_header():
     f.close()
 
 def exit_handler():
+     # subprocess.run(["sudo systemctl start ph_receiver.service"])
      # print("PROGRAM ENDING\n")
+     begin_client_proto()
+     print("\n\n     * * * * * * * * * * * * * * * * * * * * * * * * * *  * * * * * *")
+     print("     !!! Make sure to restart the regular-use pH receiver service !!!")
+     print("     * * * * * * * * * * * * * * * * * * * * * * * * * *  * * * * * *\n\n")
      pixels.fill((0,0,0))
      pixels[ERR] = RED
      t.sleep(1)
@@ -100,46 +219,51 @@ def read_cal_point(cal_point):
     tx_char_list = sensor_obj.getCharacteristics(uuid=tx_uuid)
     tx_char = tx_char_list[0]
     if cal_point == 1:
-        tx_char.write("PT1_10.0".encode('utf-8'), False)
-        print("\nStep 1: Please dip the Lura Health retainer into pH 10 buffer. Swirl the retainer briefly.")
-        print("        Data will be printed for you to view. Press ENTER when you ready to store data as a calibration point.")
+        print("\nStep 1, pH 10: Rinse the Lura Health retainer with water, then dip into pH 10 buffer. Swirl the retainer briefly.")
+        print("               Press ENTER when you are ready to collect and store the calibration point.\n")
         input(" ")
+        tx_char.write("PT1_10.0".encode('utf-8'), False)
         
     if cal_point == 2:
-        tx_char.write("PT2_7.0".encode('utf-8'), False)
-        print("\nStep 1: Please dip the Lura Health retainer into pH 7 buffer. Swirl the retainer briefly.")
-        print("        Data will be printed for you to view. Press ENTER when you ready to store data as a calibration point.")
+        print("\nStep 2, pH 7: Rinse the Lura Health retainer with water, then dip into pH 7 buffer. Swirl the retainer briefly.")
+        print("              Press ENTER when you are ready to collect and store the calibration point.\n")
         input(" ")
+        tx_char.write("PT2_7.0".encode('utf-8'), False)
         
     if cal_point == 3:
-        tx_char.write("PT3_4.0".encode('utf-8'), False)
-        print("\nStep 1: Please dip the Lura Health retainer into pH 4 buffer. Swirl the retainer briefly.")
-        print("        Data will be printed for you to view. Press ENTER when you ready to store data as a calibration point.")
+        print("\nStep 3, pH 4: Rinse the Lura Health retainer with water, then dip into pH 4 buffer. Swirl the retainer briefly.")
+        print("              Press ENTER when you are ready to collect and store the calibration point.\n")
         input(" ")
+        tx_char.write("PT3_4.0".encode('utf-8'), False)
         
 def print_cal_instructions():
+    global in_precal_state
     print("\n*** Data will now be printed to this screen. New data is read every second.")
     print("    Data will be continually printed until you press the ENTER key.")
     print("    When you press the ENTER key, the 3 point calibration will start.")
     print(" ")
     print("*** Rows of data contain: pH value, temperature (*C), battery level (mV), pH value (mV).")
-    print("    Before pressing ENTER and while data is printed, you may briefly test the device")
-    print("    in pH buffers. Once you press the ENTER key, one set of pH data will be printed per calibration point.")
-    input("\n\n        (press ENTER when you are finished reading the above instructions)\n")
+    print("    Before pressing ENTER and while data is printed, you may briefly test the device in pH buffers.")
+    input("\n\n        (press ENTER when you are finished reading the above instructions)\n\n\n")
     print("*** Starting to print data. Press ENTER when you are ready to begin calibration...\n")
+    in_precal_state = True
     t.sleep(1)
         
 def begin_demo_proto():
-    global in_precal_state
     global in_demo_proto_state
     global sensor_obj
     tx_char_list = sensor_obj.getCharacteristics(uuid=tx_uuid)
     tx_char = tx_char_list[0]
     tx_char.write("DEMO_PROTO".encode('utf-8'), False)
-    # begin_cal()
-    in_precal_state = True
     in_demo_proto_state = True
     print_cal_instructions()
+    
+def send_stayon_command():
+    global sensor_obj
+    tx_char_list = sensor_obj.getCharacteristics(uuid=tx_uuid)
+    tx_char = tx_char_list[0]
+    tx_char.write("STAYON".encode('utf-8'), False)
+    
     
     
 def begin_client_proto():
@@ -147,12 +271,13 @@ def begin_client_proto():
     tx_char_list = sensor_obj.getCharacteristics(uuid=tx_uuid)
     tx_char = tx_char_list[0]
     tx_char.write("CLIENT_PROTO".encode('utf-8'), False)
-    sleep(0.2)
     tx_char.write("STAYON".encode('utf-8'), False)
 
 
 def begin_cal():
     global sensor_obj
+    global in_precal_state
+    in_precal_state = False
     tx_char_list = sensor_obj.getCharacteristics(uuid=tx_uuid)
     tx_char = tx_char_list[0]
     tx_char.write("STARTCAL3".encode('utf-8'), False)
@@ -160,8 +285,33 @@ def begin_cal():
     read_cal_point(1)
     read_cal_point(2)
     read_cal_point(3)
-  
 
+def get_calibration_vals():
+    global PT1mv
+    global PT2mv
+    global PT3mv
+    global PT1temp
+    global PT2temp
+    global PT3temp
+    
+    avg_temp = (float(PT1temp) + float(PT2temp) + float(PT3temp)) / 3
+    
+    x = [int(PT1mv), int(PT2mv), int(PT3mv)]
+    y = [10, 7, 4]
+    
+    # Inverse Y = Mx + B to M = (Y - B)/x    
+    slope, intercept, r_value, p_value, std_err = stats.linregress(x, y)
+    print("Sensitivity (mV / pH): " + str(1/slope)[:5] + "   Offset (mV): " + str(intercept/slope*(-1))[:5] + "   r val: " + str(r_value)[:5] + "temp (*C): " + str(avg_temp)[:5] + "\n")
+    orig_time = datetime.now(CST)
+    fout = open(fname, "a+")
+    fout.write(str(orig_time.strftime(fmt + "Sensitivity (mV / pH): " + str(1/slope)[:5] + "   Offset (mV): " + str(intercept/slope*(-1))[:5] + "   r val: " + str(r_value)[:5] + "temp (*C): " + str(avg_temp)[:5] + "\n")))
+    fout.close()
+    
+def print_data_after_cal():
+    global sensor_obj
+    tx_char_list = sensor_obj.getCharacteristics(uuid=tx_uuid)
+    tx_char = tx_char_list[0]
+    tx_char.write("DEMO_PROTO".encode('utf-8'), False)
 
 # Store data using back dating timestamp protocol when writing to csv file, if 
 # multiple packets are sent
@@ -176,7 +326,39 @@ def process_and_store_data(data):
     global connected
     global receiving_buffer
     global in_demo_proto_state
+    global PT1mv
+    global PT2mv
+    global PT3mv
+    global PT1temp
+    global PT2temp
+    global PT3temp
     
+    if "PT" in data:
+        print(data + " Celsius\n")
+        if "PT1" in data:
+            PT1mv = data.split()[1]
+            PT1temp = data.split()[3]
+        elif "PT2" in data:
+            PT2mv = data.split()[1]
+            PT2temp = data.split()[3]
+        elif "PT3" in data:
+            PT3mv = data.split()[1]
+            PT3temp = data.split()[3]
+    
+    if "M=" in data:
+        orig_time = datetime.now(CST)
+        fout = open(fname, "a+")
+        fout.write(str(orig_time.strftime(fmt + "," + data + " !! 20 byte clamped packet from nRF\n")))
+        fout.close()
+        get_calibration_vals()
+        t.sleep(1)
+        print("*** Data will now be printed to the screen. You can verify your calibration results in pH buffers.")
+        print("    Press CTRL + C when would like to finish calibration and return to normal device operation.\n\n")
+        t.sleep(1)
+        tx_char_list = sensor_obj.getCharacteristics(uuid=tx_uuid)
+        tx_char = tx_char_list[0]
+        tx_char.write("DEMO_PROTO".encode('utf-8'), False)
+        
     if "TOTAL" in data:
         receiving_buffer = True
         in_demo_proto_state = False
@@ -201,9 +383,11 @@ def process_and_store_data(data):
         # Write to file if only 1 total packet, store in temp array otherwise
         if total_packs == 1:
             f = open(fname, "a+")
-            f.write(str(time.strftime(fmt + "," +  data)))
+            if "PT" in data or "M=" in data: f.write(str(time.strftime(fmt + "," +  data + "\n")))
+            else: f.write(str(time.strftime(fmt + "," +  data)))
             f.close()
-            print(str(time.strftime(fmt + "," +  data))[:-1]) # Remove trailing \n
+            if "CALBEGIN" not in data and "PT" not in data and "M=" not in data:
+                print(str(time.strftime(fmt + "," +  data))[:-1]) # Remove trailing \n
         else:
            data_buffer.append(str(time.strftime(fmt + "," +  data))) 
            remaining_packs -= 1
@@ -332,51 +516,60 @@ print("* * * * * * * * * * * * * * * * * * * * * * * * * * *")
 print(" ")
 print("*** BLE Scanning for Lura device...")
 
+
 # Continually scan and connect to device if available
 while True:
-    try:
+    #try:
+        global in_precal_state
         find_and_connect()
         if sensor_obj.waitForNotifications(3.0):
             pass
-    except Exception as e:
-        global in_demo_proto_state 
-        in_demo_proto_state = False
-        time = datetime.now(CST)
-        fout = open(foutname, "a+")
-        fout.write(str(time.strftime(fmt)))
-        fout.write(", " + str(e) + "\n")
-        fout.close()
-        if "Failed" in str(e):
-            try:
-                pixels.fill((0,0,0))
-                t.sleep(1)
-                pixels[ERR] = RED
-                sys.exit(0)
-            except SystemExit:
-                pixels.fill((0,0,0))
-                t.sleep(1)
-                pixels[ERR] = RED
-                os._exit(0)
-        elif "disconnected" in str(e):
-            connected = False
-            pixels[CONN] = RED
-            # print(e)
-            print("!!! * * * * * * * * * * * * * !!!")
-            print("!!!    BLE connection lost    !!!")
-            print("!!! * * * * * * * * * * * * * !!!")
-            remaining_packs = 1
-            total_packs = 1 
-            continue
-        else:
-            try:
-                pixels.fill((0,0,0))
-                t.sleep(1)
-                pixels[ERR] = RED
-                sys.exit(0)
-            except SystemExit:
-                pixels.fill((0,0,0))
-                t.sleep(1)
-                pixels[ERR] = RED
-                os._exit(0)
-    else:
-        continue
+        if (in_precal_state == True and kb.kbhit()):
+            c = kb.getch()
+            if ord(c) == 10:
+                in_precal_state == False
+                begin_cal()
+    #except Exception as e:
+        #print("!!! Whoops, there was a problem in the application !!!\n!!! Please check /home/pi/Desktop/calibration_event_outputs for more info !!!\n")
+        #global in_demo_proto_state 
+        #in_demo_proto_state = False
+        #time = datetime.now(CST)
+        #fout = open(foutname, "a+")
+        #fout.write(str(time.strftime(fmt)))
+        #fout.write(", " + str(e) + "\n")
+        #fout.close()
+        #if "Failed" in str(e):
+            #try:
+                #pixels.fill((0,0,0))
+                #t.sleep(1)
+                #pixels[ERR] = RED
+                #sys.exit(0)
+            #except SystemExit:
+                #pixels.fill((0,0,0))
+                #t.sleep(1)
+                #pixels[ERR] = RED
+                #os._exit(0)
+        #elif "disconnected" in str(e):
+            #connected = False
+            #pixels[CONN] = RED
+            #print(e)
+            #print("!!! * * * * * * * * * * * * * !!!")
+            #print("!!!    BLE connection lost    !!!")
+            #print("!!! * * * * * * * * * * * * * !!!")
+            #remaining_packs = 1
+            #total_packs = 1 
+            #continue
+        #else:
+            #try:
+                #pixels.fill((0,0,0))
+                #t.sleep(1)
+                #pixels[ERR] = RED
+                #sys.exit(0)
+            #except SystemExit:
+                #pixels.fill((0,0,0))
+                #t.sleep(1)
+                #pixels[ERR] = RED
+                #os._exit(0)
+    #else:
+        #continue
+    
