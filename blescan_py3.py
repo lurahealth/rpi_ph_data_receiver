@@ -216,7 +216,7 @@ def find_and_connect():
                     sensor_obj.connect(dev.addr, dev.addrType)
                     print("Connected to lura health device")
                     write_csv_header()
-                    store_device_name(dev.getValueText)
+                    store_device_name(dev.getValueText(9))
                     connected = True
                     pixels[CONN] = GREEN
                     print("Enabling notifications")
@@ -233,45 +233,45 @@ pixels[CONN] = RED
 
 # Continually scan and connect to device if available
 while True:
-    try:
+    #try:
         find_and_connect()
         if sensor_obj.waitForNotifications(3.0):
             pass
-    except Exception as e:
-        time = datetime.now(CST)
-        fout = open(foutname, "a+")
-        fout.write(str(time.strftime(fmt)))
-        fout.write(", " + str(e) + "\n")
-        fout.close()
-        if "Failed" in str(e):
-            try:
-                pixels.fill((0,0,0))
-                t.sleep(1)
-                pixels[ERR] = RED
-                sys.exit(0)
-            except SystemExit:
-                pixels.fill((0,0,0))
-                t.sleep(1)
-                pixels[ERR] = RED
-                os._exit(0)
-        elif "disconnected" in str(e):
-            connected = False
-            pixels[CONN] = RED
-            print(e)
-            print("Restarting now\n")
-            remaining_packs = 1
-            total_packs = 1 
-            continue
-        else:
-            try:
-                pixels.fill((0,0,0))
-                t.sleep(1)
-                pixels[ERR] = RED
-                sys.exit(0)
-            except SystemExit:
-                pixels.fill((0,0,0))
-                t.sleep(1)
-                pixels[ERR] = RED
-                os._exit(0)
-    else:
-        continue
+    #except Exception as e:
+        #time = datetime.now(CST)
+        #fout = open(foutname, "a+")
+        #fout.write(str(time.strftime(fmt)))
+        #fout.write(", " + str(e) + "\n")
+        #fout.close()
+        #if "Failed" in str(e):
+            #try:
+                #pixels.fill((0,0,0))
+                #t.sleep(1)
+                #pixels[ERR] = RED
+                #sys.exit(0)
+            #except SystemExit:
+                #pixels.fill((0,0,0))
+                #t.sleep(1)
+                #pixels[ERR] = RED
+                #os._exit(0)
+        #elif "disconnected" in str(e):
+            #connected = False
+            #pixels[CONN] = RED
+            #print(e)
+            #print("Restarting now\n")
+            #remaining_packs = 1
+            #total_packs = 1 
+            #continue
+        #else:
+            #try:
+                #pixels.fill((0,0,0))
+                #t.sleep(1)
+                #pixels[ERR] = RED
+                #sys.exit(0)
+            #except SystemExit:
+                #pixels.fill((0,0,0))
+                #t.sleep(1)
+                #pixels[ERR] = RED
+                #os._exit(0)
+    #else:
+        #continue
