@@ -298,7 +298,7 @@ def get_calibration_vals():
     
     # Inverse Y = Mx + B to M = (Y - B)/x    
     slope, intercept, r_value, p_value, std_err = stats.linregress(x, y)
-    print("Sensitivity (mV / pH): " + str(1/slope)[:5] + "   Offset (mV): " + str(intercept/slope*(-1))[:5] + "   r val: " + str(r_value)[:5] + "temp (*C): " + str(avg_temp)[:5] + "\n")
+    print("Sensitivity (mV / pH): " + str(1/slope)[:5] + "   Offset (mV): " + str(intercept/slope*(-1))[:5] + "   r val: " + str(r_value)[:5] + " temp (*C): " + str(avg_temp)[:5] + "\n")
     orig_time = datetime.now(CST)
     fout = open(fname, "a+")
     fout.write(str(orig_time.strftime(fmt + "Sensitivity (mV / pH): " + str(1/slope)[:5] + "   Offset (mV): " + str(intercept/slope*(-1))[:5] + "   r val: " + str(r_value)[:5] + "temp (*C): " + str(avg_temp)[:5] + "\n")))
