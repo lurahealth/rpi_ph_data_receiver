@@ -191,9 +191,6 @@ def exit_handler():
      # subprocess.run(["sudo systemctl start ph_receiver.service"])
      # print("PROGRAM ENDING\n")
      begin_client_proto()
-     print("\n\n     * * * * * * * * * * * * * * * * * * * * * * * * * *  * * * * * *")
-     print("     !!! Make sure to restart the regular-use pH receiver service !!!")
-     print("     * * * * * * * * * * * * * * * * * * * * * * * * * *  * * * * * *\n\n")
      pixels.fill((0,0,0))
      pixels[ERR] = RED
      t.sleep(1)
@@ -519,7 +516,7 @@ print("*** BLE Scanning for Lura device...")
 
 # Continually scan and connect to device if available
 while True:
-    #try:
+    try:
         global in_precal_state
         find_and_connect()
         if sensor_obj.waitForNotifications(3.0):
@@ -529,47 +526,47 @@ while True:
             if ord(c) == 10:
                 in_precal_state == False
                 begin_cal()
-    #except Exception as e:
-        #print("!!! Whoops, there was a problem in the application !!!\n!!! Please check /home/pi/Desktop/calibration_event_outputs for more info !!!\n")
-        #global in_demo_proto_state 
-        #in_demo_proto_state = False
-        #time = datetime.now(CST)
-        #fout = open(foutname, "a+")
-        #fout.write(str(time.strftime(fmt)))
-        #fout.write(", " + str(e) + "\n")
-        #fout.close()
-        #if "Failed" in str(e):
-            #try:
-                #pixels.fill((0,0,0))
-                #t.sleep(1)
-                #pixels[ERR] = RED
-                #sys.exit(0)
-            #except SystemExit:
-                #pixels.fill((0,0,0))
-                #t.sleep(1)
-                #pixels[ERR] = RED
-                #os._exit(0)
-        #elif "disconnected" in str(e):
-            #connected = False
-            #pixels[CONN] = RED
-            #print(e)
-            #print("!!! * * * * * * * * * * * * * !!!")
-            #print("!!!    BLE connection lost    !!!")
-            #print("!!! * * * * * * * * * * * * * !!!")
-            #remaining_packs = 1
-            #total_packs = 1 
-            #continue
-        #else:
-            #try:
-                #pixels.fill((0,0,0))
-                #t.sleep(1)
-                #pixels[ERR] = RED
-                #sys.exit(0)
-            #except SystemExit:
-                #pixels.fill((0,0,0))
-                #t.sleep(1)
-                #pixels[ERR] = RED
-                #os._exit(0)
-    #else:
-        #continue
+    except Exception as e:
+        print("!!! Whoops, there was a problem in the application !!!\n!!! Please check /home/pi/Desktop/calibration_event_outputs for more info !!!\n")
+        global in_demo_proto_state 
+        in_demo_proto_state = False
+        time = datetime.now(CST)
+        fout = open(foutname, "a+")
+        fout.write(str(time.strftime(fmt)))
+        fout.write(", " + str(e) + "\n")
+        fout.close()
+        if "Failed" in str(e):
+            try:
+                pixels.fill((0,0,0))
+                t.sleep(1)
+                pixels[ERR] = RED
+                sys.exit(0)
+            except SystemExit:
+                pixels.fill((0,0,0))
+                t.sleep(1)
+                pixels[ERR] = RED
+                os._exit(0)
+        elif "disconnected" in str(e):
+            connected = False
+            pixels[CONN] = RED
+            print(e)
+            print("!!! * * * * * * * * * * * * * !!!")
+            print("!!!    BLE connection lost    !!!")
+            print("!!! * * * * * * * * * * * * * !!!")
+            remaining_packs = 1
+            total_packs = 1 
+            continue
+        else:
+            try:
+                pixels.fill((0,0,0))
+                t.sleep(1)
+                pixels[ERR] = RED
+                sys.exit(0)
+            except SystemExit:
+                pixels.fill((0,0,0))
+                t.sleep(1)
+                pixels[ERR] = RED
+                os._exit(0)
+    else:
+        continue
     
