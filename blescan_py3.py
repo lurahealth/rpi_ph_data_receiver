@@ -241,7 +241,7 @@ while True:
         time = datetime.now(CST)
         fout = open(foutname, "a+")
         fout.write(str(time.strftime(fmt)))
-        out.write(", " + str(e) + "\n")
+        fout.write(", " + str(e) + "\n")
         fout.close()
         if "Failed" in str(e):
             try:
