@@ -11,6 +11,7 @@ import board
 import neopixel
 import time as t
 import atexit
+import subprocess
 
 # Variables for neopixel strip
 #
@@ -24,6 +25,7 @@ SCAN  = 2
 FOUND = 3
 CONN  = 4
 DATA  = 5
+WIFI  = 6
 ERR   = 7
 
 BLANK  = (0,0,0)
@@ -199,6 +201,7 @@ def find_and_connect():
     global fname
     global foutname
     while not connected:
+        update_wifi_led()
         scanner.clear()
         scanner.start()
         pixels[SCAN] = GREEN
@@ -224,6 +227,16 @@ def find_and_connect():
                     sensor_obj.writeCharacteristic(notify_handle, b'\x01\x00', True)
                     pixels[FOUND] = BLANK
 
+def update_wifi_led():
+    ps = subprocess.Popen(['iwconfig'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    print("ran subproces fam")
+    try:
+        output = subprocess.check_output(('grep', 'ESSID'), stdin=ps.stdout)
+        pixels[WIFI] = GREEN
+    except subprocess.CalledProcessError:
+        # grep did not match any lines
+        pixels[WIFI] = RED
+
 
 # Init script status to on
 pixels.fill((0,0,0))
@@ -238,6 +251,7 @@ while True:
         if sensor_obj.waitForNotifications(3.0):
             pass
     except Exception as e:
+        print(str(e) + "\n")
         time = datetime.now(CST)
         fout = open(foutname, "a+")
         fout.write(str(time.strftime(fmt)))
