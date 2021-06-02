@@ -229,7 +229,6 @@ def find_and_connect():
 
 def update_wifi_led():
     ps = subprocess.Popen(['iwconfig'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    print("ran subproces fam")
     try:
         output = subprocess.check_output(('grep', 'ESSID'), stdin=ps.stdout)
         pixels[WIFI] = GREEN

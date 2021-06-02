@@ -78,6 +78,8 @@ def check_continue():
         begin_cal()
     elif event == sg.WIN_CLOSED or event == ' EXIT ':
         graceful_exit()
+    elif event == 'RESTART':
+        begin_demo_proto()
 
 def handle_restart():
     # test
@@ -311,6 +313,8 @@ def read_cal_point(cal_point):
     event, values = window.read(25)
     if event == sg.WIN_CLOSED or event == ' EXIT ':
         graceful_exit()
+    elif event == 'RESTART':
+        begin_demo_proto()
     window.Element('CONTINUE').Update(disabled=True)
     window.Element('-PT1READ-').Update(disabled=True)
     window.Element('-PT2READ-').Update(disabled=True)
@@ -331,6 +335,8 @@ def read_cal_point(cal_point):
                 pt_read = True
             if event == sg.WIN_CLOSED or event == ' EXIT ':
                 graceful_exit()
+            elif event == 'RESTART':
+                begin_demo_proto()
 
         tx_char.write("PT1_10.0".encode('utf-8'), False)
         
@@ -367,6 +373,10 @@ def read_cal_point(cal_point):
                 window.Element('-PT3READ-').Update(disabled=True)
             if event == sg.WIN_CLOSED or event == ' EXIT ':
                 graceful_exit()
+            elif event == 'RESTART':
+                begin_demo_proto()
+            elif event == 'RESTART':
+                begin_demo_proto()
         tx_char.write("PT3_4.0".encode('utf-8'), False)
         
 def print_cal_instructions():
@@ -619,6 +629,8 @@ def read_window_helper():
     event, values = window.read(10)
     if event == sg.WIN_CLOSED or event == ' EXIT ':
         graceful_exit()
+    elif event == 'RESTART':
+        begin_demo_proto()
 
 def find_and_connect():
     global connected
@@ -690,6 +702,8 @@ while True:
         event, values = window.read(25)
         if event == sg.WIN_CLOSED or event == ' EXIT ':
                 graceful_exit()
+        elif event == 'RESTART':
+                begin_demo_proto()
         find_and_connect()
         if sensor_obj.waitForNotifications(3.0):
             event, values = window.read(25)
