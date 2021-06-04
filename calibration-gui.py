@@ -47,7 +47,7 @@ col1 = sg.Column([
                              ], size=(380,460), pad=(0,0))]])], ], pad=(0,0))
 
 col3 = sg.Column([[sg.Frame('Actions:',
-                            [[sg.Column([[sg.Button(' EXIT ', pad=(20,0), button_color='OrangeRed'), sg.Button('RESTART'), sg.Button('DISCONNECT', button_color='yellow3')]],
+                            [[sg.Column([[sg.Button(' EXIT ', pad=(20,0), button_color='OrangeRed'), sg.Button('RESTART')]],
                                         size=(290,45), pad=(0,0))]]),
                    sg.Frame('Calibration Results:',
                             [[sg.Column([[sg.Text('Sensitivity (mV / pH): ', font='Ubuntu 11', text_color='red'), sg.Text('          ', key='-SENS-'), sg.Text('R^2: ', font='Ubuntu 11', text_color='red'), sg.Text('               ', key='-R2-'), sg.Text('Offset (mV): ', font='Ubuntu 11', text_color='red'), sg.Text('           ', key='-OFFSET-')]], size=(550,45), pad=(30,0))]], pad=(10,0))]])
@@ -80,36 +80,6 @@ def check_continue():
         graceful_exit()
     elif event == 'RESTART':
         begin_demo_proto()
-
-def handle_restart():
-    # test
-    print()
-
-
-def read_print_pt1():
-    # test
-    print()
-
-
-def read_print_pt2():
-    # test
-    print()
-
-
-def read_print_pt3():
-    # test
-    print()
-
-
-def update_instructions(step):
-    # test
-    print()
-
-
-def display_calresults(m, b, r):
-    # test
-    print()
-
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 # Found from https://simondlevy.academic.wlu.edu/files/software/kbhit.py
@@ -697,7 +667,7 @@ def graceful_exit():
 
 # Continually scan and connect to device if available
 while True:
-    try:
+#    try:
         global in_precal_state
         event, values = window.read(25)
         if event == sg.WIN_CLOSED or event == ' EXIT ':
@@ -719,49 +689,49 @@ while True:
             if (event == 'CONTINUE'):
                 in_precal_state = False
                 begin_cal()
-    except Exception as e:
-        print("!!! Whoops, there was a problem in the application !!!\n!!! Please check /home/pi/Desktop/calibration_event_outputs for more info !!!\n")
-        print(e)
-        global in_demo_proto_state 
-        read_window_helper()
-        update_blestatus(False)
-        in_demo_proto_state = False
-        time = datetime.now(CST)
-        fout = open(foutname, "a+")
-        fout.write(str(time.strftime(fmt)))
-        fout.write(", " + str(e) + "\n")
-        fout.close()
-        if "Failed" in str(e):
-            try:
-                pixels.fill((0,0,0))
-                t.sleep(1)
-                pixels[ERR] = RED
-                sys.exit(0)
-            except SystemExit:
-                pixels.fill((0,0,0))
-                t.sleep(1)
-                pixels[ERR] = RED
-                os._exit(0)
-        elif "disconnected" in str(e):
-            connected = False
-            pixels[CONN] = RED
-            print("!!! * * * * * * * * * * * * * !!!")
-            print("!!!    BLE connection lost    !!!")
-            print("!!! * * * * * * * * * * * * * !!!")
-            remaining_packs = 1
-            total_packs = 1 
-            continue
-        else:
-            try:
-                pixels.fill((0,0,0))
-                t.sleep(1)
-                pixels[ERR] = RED
-                sys.exit(0)
-            except SystemExit:
-               pixels.fill((0,0,0))
-               t.sleep(1)
-               pixels[ERR] = RED
-               os._exit(0)
-    else:
-       continue
+#    except Exception as e:
+#        print("!!! Whoops, there was a problem in the application !!!\n!!! Please check /home/pi/Desktop/calibration_event_outputs for more info !!!\n")
+#        print(e)
+#        global in_demo_proto_state 
+#        read_window_helper()
+#        update_blestatus(False)
+#        in_demo_proto_state = False
+#        time = datetime.now(CST)
+#        fout = open(foutname, "a+")
+#        fout.write(str(time.strftime(fmt)))
+#        fout.write(", " + str(e) + "\n")
+#        fout.close()
+#        if "Failed" in str(e):
+#            try:
+#                pixels.fill((0,0,0))
+#                t.sleep(1)
+#                pixels[ERR] = RED
+#                sys.exit(0)
+#            except SystemExit:
+#                pixels.fill((0,0,0))
+#                t.sleep(1)
+#                pixels[ERR] = RED
+#                os._exit(0)
+#        elif "disconnected" in str(e):
+#            connected = False
+#            pixels[CONN] = RED
+#            print("!!! * * * * * * * * * * * * * !!!")
+#            print("!!!    BLE connection lost    !!!")
+#            print("!!! * * * * * * * * * * * * * !!!")
+#            remaining_packs = 1
+#            total_packs = 1 
+#            continue
+#        else:
+#            try:
+#                pixels.fill((0,0,0))
+#                t.sleep(1)
+#                pixels[ERR] = RED
+#                sys.exit(0)
+#            except SystemExit:
+#               pixels.fill((0,0,0))
+#               t.sleep(1)
+#               pixels[ERR] = RED
+#               os._exit(0)
+#    else:
+#       continue
     
