@@ -47,7 +47,7 @@ col1 = sg.Column([
                              ], size=(380,460), pad=(0,0))]])], ], pad=(0,0))
 
 col3 = sg.Column([[sg.Frame('Actions:',
-                            [[sg.Column([[sg.Button(' EXIT ', pad=(40,0), button_color='OrangeRed'), sg.Button('RESTART')]],
+                            [[sg.Column([[sg.Button(' EXIT ', pad=(20,0), button_color='OrangeRed'), sg.Button('RESTART'), sg.Button('DISCONNECT', button_color='yellow3')]],
                                         size=(290,45), pad=(0,0))]]),
                    sg.Frame('Calibration Results:',
                             [[sg.Column([[sg.Text('Sensitivity (mV / pH): ', font='Ubuntu 11', text_color='red'), sg.Text('          ', key='-SENS-'), sg.Text('R^2: ', font='Ubuntu 11', text_color='red'), sg.Text('               ', key='-R2-'), sg.Text('Offset (mV): ', font='Ubuntu 11', text_color='red'), sg.Text('           ', key='-OFFSET-')]], size=(550,45), pad=(30,0))]], pad=(10,0))]])

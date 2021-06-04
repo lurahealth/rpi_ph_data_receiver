@@ -1,0 +1,52 @@
+-------------------------------------------------------------
+  Scroll up and down using arrow keys or a mouse. 
+  Press 'q' to return to the command line.
+
+-------------------------------------------------------------  
+        Command Name     |    Description 
+-------------------------|-----------------------------------
+                         |                                   
+     run-calibration-gui |  Launches the graphical user interface
+                         |  for performing calibrations
+                         |                                   
+     run-calibration-cli |  Launches the command line interface
+                         |  for performing calibrations
+                         |                                   
+   print-specific-data N |  Prints all data stored for Lura Health
+                         |  device 'N', where 'N' is a device ID #.
+                         |  Example: print-specific-data 010013
+                         |                                   
+ print-specific-events N |  Prints all events stored for Lura Health
+                         |  device 'N', where 'N' is a device ID #.
+                         |  Example: print-specific-events 010013                                  
+                         |                                   
+         print-live-data |  Prints a live stream of data for the
+                         |  actively connected Lura device. The
+                         |  device ID of the most recent BLE connection
+                         |  is used to determine active connection.
+                         |                                   
+       print-live-events |  Prints a live stream of events for the
+                         |  actively connected Lura device. The
+                         |  device ID of the most recent BLE connection
+                         |  is used to determine active connection.                                 
+                         |                                   
+       print-all-devices |  Prints a list of all devices that have 
+                         |  ever connected to Raspberry Pi (from last
+                         |  admin reset).
+                         |                                   
+        check-ble-health |  Prints status of Raspberry Pi Bluetooth
+                         |  firmware. If result is not active or running,
+                         |  you may need to run 'restart-ble'.                                 
+                         |
+             restart-ble |  Restarts the Raspberry Pi Bluetooth firmware.                                 
+                         |                                   
+      check-receiver-app |  Prints status of Lura pH Receiver python script
+                         |  service. If result is not active or running,
+                         |  you may need to run 'restart-receiver-app'.                                   
+                         |                                   
+    restart-receiver-app |  Restarts the Lura pH receiver service.                                 
+                         |                                   
+       force-upload-data |  Forces a fresh upload of all data to AWS EC2
+                         |  server.
+                         |                                   
+-------------------------|-----------------------------------
