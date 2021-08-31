@@ -67,10 +67,10 @@ col1 = sg.Column([
                              ], size=(380,460), pad=(0,0))]])], ], pad=(0,0))
 
 col3 = sg.Column([[sg.Frame('Actions:',
-                            [[sg.Column([[sg.Button('PWR OFF', pad=(5,0), button_color='OrangeRed'), sg.Button('Restart Cal', pad=(5,0)), sg.Button('Begin Clinical', pad=(5,0), button_color='green3')]],
-                                        size=(330,45), pad=(0,0))]]),
+                            [[sg.Column([[sg.Button(' EXIT ', pad=(20,0), button_color='OrangeRed'), sg.Button('RESTART')]],
+                                        size=(290,45), pad=(0,0))]]),
                    sg.Frame('Calibration Results:',
-                            [[sg.Column([[sg.Text('Sensitivity (mV / pH): ', font='Ubuntu 11', text_color='red'), sg.Text('          ', key='-SENS-'), sg.Text('R^2: ', font='Ubuntu 11', text_color='red'), sg.Text('             ', key='-R2-'), sg.Text('Offset (mV): ', font='Ubuntu 11', text_color='red'), sg.Text('         ', key='-OFFSET-')]], size=(540,45), pad=(10,0))]], pad=(10,0))]])
+                            [[sg.Column([[sg.Text('Sensitivity (mV / pH): ', font='Ubuntu 11', text_color='red'), sg.Text('          ', key='-SENS-'), sg.Text('R^2: ', font='Ubuntu 11', text_color='red'), sg.Text('               ', key='-R2-'), sg.Text('Offset (mV): ', font='Ubuntu 11', text_color='red'), sg.Text('           ', key='-OFFSET-')]], size=(550,45), pad=(30,0))]], pad=(10,0))]])
 
 # The final layout is a simple one
 layout = [[col1, col2],
@@ -83,8 +83,7 @@ window = sg.Window('Lura Health Calibration Tool', layout, resizable=True)
 
 def update_blestatus(connected):
     if connected is True:
-        new_text = 'Connected'
-        window.Element('-BLE-').Update(value=new_text, text_color='green')
+        window.Element('-BLE-').Update(value='CONNECTED', text_color='green')
     else:
         window.Element('-BLE-').Update(value='DISCONNECTED', text_color='red')
 
@@ -97,20 +96,10 @@ def check_continue():
     event, values = window.read(50)
     if event == 'CONTINUE':
         begin_cal()
-    elif event == sg.WIN_CLOSED or event == 'PWR OFF':
+    elif event == sg.WIN_CLOSED or event == ' EXIT ':
         graceful_exit()
-    elif event == 'Restart Cal':
-        restart_program()
-
-def check_button_inputs():
-    event, values = window.read(25)
-    if event == sg.WIN_CLOSED or event == 'PWR OFF':
-        graceful_exit()
-    elif event == 'Restart Cal':
-        restart_program()
-    elif event == 'Begin Clinical':
-        begin_client_proto()
-        graceful_exit()
+    elif event == 'RESTART':
+        begin_demo_proto()
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 # Found from https://simondlevy.academic.wlu.edu/files/software/kbhit.py
@@ -288,6 +277,7 @@ def write_csv_header():
 def exit_handler():
      # subprocess.run(["sudo systemctl start ph_receiver.service"])
      # print("PROGRAM ENDING\n")
+     begin_client_proto()
      pixels.fill((0,0,0))
      pixels[ERR] = RED
      t.sleep(1)
@@ -310,7 +300,11 @@ def read_cal_point(cal_point):
     global sensor_obj
     tx_char_list = sensor_obj.getCharacteristics(uuid=tx_uuid)
     tx_char = tx_char_list[0]
-    check_button_input()
+    event, values = window.read(25)
+    if event == sg.WIN_CLOSED or event == ' EXIT ':
+        graceful_exit()
+    elif event == 'RESTART':
+        begin_demo_proto()
     window.Element('CONTINUE').Update(disabled=True)
     window.Element('-PT1READ-').Update(disabled=True)
     window.Element('-PT2READ-').Update(disabled=True)
@@ -329,7 +323,10 @@ def read_cal_point(cal_point):
             event, values = window.read()
             if event == '-PT1READ-':
                 pt_read = True
-            check_button_inputs()
+            if event == sg.WIN_CLOSED or event == ' EXIT ':
+                graceful_exit()
+            elif event == 'RESTART':
+                begin_demo_proto()
 
         tx_char.write("PT1_10.0".encode('utf-8'), False)
         
@@ -347,7 +344,6 @@ def read_cal_point(cal_point):
             event, values = window.read()
             if event == '-PT2READ-':
                 pt_read = True
-            check_button_inputs()
         tx_char.write("PT2_7.0".encode('utf-8'), False)
         
     if cal_point == 3:
@@ -365,7 +361,12 @@ def read_cal_point(cal_point):
             if event == '-PT3READ-':
                 pt_read = True
                 window.Element('-PT3READ-').Update(disabled=True)
-                check_button_inputs()
+            if event == sg.WIN_CLOSED or event == ' EXIT ':
+                graceful_exit()
+            elif event == 'RESTART':
+                begin_demo_proto()
+            elif event == 'RESTART':
+                begin_demo_proto()
         tx_char.write("PT3_4.0".encode('utf-8'), False)
         
 def print_cal_instructions():
@@ -398,11 +399,15 @@ def send_stayon_command():
     tx_char = tx_char_list[0]
     tx_char.write("STAYON".encode('utf-8'), False)
     
+    
+    
 def begin_client_proto():
     global sensor_obj
     tx_char_list = sensor_obj.getCharacteristics(uuid=tx_uuid)
     tx_char = tx_char_list[0]
     tx_char.write("CLIENT_PROTO".encode('utf-8'), False)
+    tx_char.write("STAYON".encode('utf-8'), False)
+
 
 def begin_cal():
     global sensor_obj
@@ -611,8 +616,12 @@ def store_device_name(name):
     f.close()
 
 def read_window_helper():
-    check_button_inputs()
-    
+    event, values = window.read(10)
+    if event == sg.WIN_CLOSED or event == ' EXIT ':
+        graceful_exit()
+    elif event == 'RESTART':
+        begin_demo_proto()
+
 def find_and_connect():
     global connected
     global fname
@@ -642,7 +651,7 @@ def find_and_connect():
                     foutname = foutpath + dev.getValueText(9) + ".txt"
                     sensor_obj.connect(dev.addr, dev.addrType)
                     read_window_helper()
-                    update_blestatus(True) 
+                    update_blestatus(True)
                     write_csv_header()
                     store_device_name(dev.getValueText(9))
                     connected = True
@@ -680,7 +689,11 @@ def graceful_exit():
 while True:
     try:
         global in_precal_state
-        check_button_inputs()
+        event, values = window.read(25)
+        if event == sg.WIN_CLOSED or event == ' EXIT ':
+                graceful_exit()
+        elif event == 'RESTART':
+                begin_demo_proto()
         find_and_connect()
         if sensor_obj.waitForNotifications(3.0):
             event, values = window.read(25)

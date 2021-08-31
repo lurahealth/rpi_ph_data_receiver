@@ -268,6 +268,7 @@ def begin_client_proto():
     tx_char_list = sensor_obj.getCharacteristics(uuid=tx_uuid)
     tx_char = tx_char_list[0]
     tx_char.write("CLIENT_PROTO".encode('utf-8'), False)
+    t.sleep(0.250)
     tx_char.write("STAYON".encode('utf-8'), False)
 
 
@@ -298,10 +299,10 @@ def get_calibration_vals():
     
     # Inverse Y = Mx + B to M = (Y - B)/x    
     slope, intercept, r_value, p_value, std_err = stats.linregress(x, y)
-    print("Sensitivity (mV / pH): " + str(1/slope)[:5] + "   Offset (mV): " + str(intercept/slope*(-1))[:5] + "   r val: " + str(r_value)[:5] + " temp (*C): " + str(avg_temp)[:5] + "\n")
+    print("Sensitivity (mV / pH): " + str(1/slope)[:7] + "   Offset (mV): " + str(intercept/slope*(-1))[:7] + "   r val: " + str(r_value)[:7] + " temp (*C): " + str(avg_temp)[:7] + "\n")
     orig_time = datetime.now(CST)
     fout = open(fname, "a+")
-    fout.write(str(orig_time.strftime(fmt + "Sensitivity (mV / pH): " + str(1/slope)[:5] + "   Offset (mV): " + str(intercept/slope*(-1))[:5] + "   r val: " + str(r_value)[:5] + "temp (*C): " + str(avg_temp)[:5] + "\n")))
+    fout.write(str(orig_time.strftime(fmt + "Sensitivity (mV / pH): " + str(1/slope)[:7] + "   Offset (mV): " + str(intercept/slope*(-1))[:7] + "   r val: " + str(r_value)[:7] + "temp (*C): " + str(avg_temp)[:7] + "\n")))
     fout.close()
     
 def print_data_after_cal():
