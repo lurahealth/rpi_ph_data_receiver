@@ -53,13 +53,13 @@ col1 = sg.Column([
     [sg.Frame('Calibration Points:',
                             [[sg.Text(), sg.Column([
                                      [sg.Text('Point 1, pH 10:', font='Ubuntu 13')],
-                                     [sg.Multiline(key='-PT1-', size=(19,1), no_scrollbar=True, auto_refresh=True, disabled=True),
+                                     [sg.Multiline(key='-PT1-', size=(35,1), no_scrollbar=True, auto_refresh=True, disabled=True),
                                       sg.Button('Read Data', key='-PT1READ-', disabled=True)],
                                      [sg.Text('Point 2, pH 7:', font='Ubuntu 13')],
-                                     [sg.Multiline(key='-PT2-', size=(19,1), no_scrollbar=True, auto_refresh=True, disabled=True),
+                                     [sg.Multiline(key='-PT2-', size=(35,1), no_scrollbar=True, auto_refresh=True, disabled=True),
                                       sg.Button('Read Data', key='-PT2READ-', disabled=True)],
                                      [sg.Text('Point 3, pH 4:', font='Ubuntu 13')],
-                                     [sg.Multiline(key='-PT3-', size=(19,1), no_scrollbar=True, auto_refresh=True, disabled=True),
+                                     [sg.Multiline(key='-PT3-', size=(35,1), no_scrollbar=True, auto_refresh=True, disabled=True),
                                       sg.Button('Read Data', key='-PT3READ-', disabled=True)],
                                      [sg.Text('Calibration Instructions:')],
                                      [sg.Multiline(key='-INS-', size=(51,11), default_text='\n\n    Connect to Lura BLE device to continue', no_scrollbar=True, auto_refresh=True, disabled=True)],
@@ -101,6 +101,9 @@ def check_continue():
         graceful_exit()
     elif event == 'Restart Cal':
         restart_program()
+    elif event == 'Begin Clinical':
+        begin_client_proto()
+        graceful_exit()
 
 def check_button_inputs():
     event, values = window.read(25)
@@ -310,7 +313,7 @@ def read_cal_point(cal_point):
     global sensor_obj
     tx_char_list = sensor_obj.getCharacteristics(uuid=tx_uuid)
     tx_char = tx_char_list[0]
-    check_button_input()
+    check_button_inputs()
     window.Element('CONTINUE').Update(disabled=True)
     window.Element('-PT1READ-').Update(disabled=True)
     window.Element('-PT2READ-').Update(disabled=True)
@@ -474,21 +477,23 @@ def process_and_store_data(data):
     global PT3temp
     
     if "PT" in data:
+
+        curr_time = datetime.now(CST)
         if "PT1" in data:
             PT1mv = data.split()[1]
             PT1temp = data.split()[3]
             read_window_helper()
-            window.Element('-PT1-').Update(value=str(PT1mv + ' mV,  ' + PT1temp + ' *C  '))
+            window.Element('-PT1-').Update(value=str(PT1mv + ' mV,  ' + PT1temp + ' *C,  ' + curr_time.strftime(fmt)))
         elif "PT2" in data:
             PT2mv = data.split()[1]
             PT2temp = data.split()[3]
             read_window_helper()
-            window.Element('-PT2-').Update(value=str(PT2mv + ' mV,  ' + PT2temp + ' *C  '))
+            window.Element('-PT2-').Update(value=str(PT2mv + ' mV,  ' + PT2temp + ' *C,  ' + curr_time.strftime(fmt)))
         elif "PT3" in data:
             PT3mv = data.split()[1]
             PT3temp = data.split()[3]
             read_window_helper()
-            window.Element('-PT3-').Update(value=str(PT3mv + ' mV,  ' + PT3temp + ' *C  '))
+            window.Element('-PT3-').Update(value=str(PT3mv + ' mV,  ' + PT3temp + ' *C,  ' + curr_time.strftime(fmt)))
     
     if "M=" in data:
         
@@ -498,9 +503,9 @@ def process_and_store_data(data):
         fout.close()
         get_calibration_vals()
         window.read(5)
-        window.Element('-INS-').Update(value='Calibration complete. \n\nData will now be printed to the screen.\n', append=False)
+        window.Element('-INS-').Update(value='Calibration complete. Data will now be printed to the screen.\n', append=False)
         window.Element('-INS-').Update(value='You can verify your calibration results in pH buffers.\n\n', append=True)
-        window.Element('-INS-').Update(value='Press EXIT or RESTART to exit and resume normal operation or restart this calibration tool.', append=True)
+        window.Element('-INS-').Update(value='Press Begin Clinical to set the R1000 into patient-use mode. \nPress Restart Cal to re-do this calibration. \nPress PWR OFF to fully power off the R1000, in the case of device issues.\n\nYou will need to TURN ON THE R1000 again if you press PWR OFF or Restart Cal and need to continue using this tool.', append=True)
 
         tx_char_list = sensor_obj.getCharacteristics(uuid=tx_uuid)
         tx_char = tx_char_list[0]
