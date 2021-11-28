@@ -103,7 +103,8 @@ def check_continue():
         restart_program()
     elif event == 'Begin Clinical':
         begin_client_proto()
-        graceful_exit()
+        send_stayon_command()
+        # graceful_exit()
 
 def check_button_inputs():
     event, values = window.read(25)
@@ -113,7 +114,8 @@ def check_button_inputs():
         restart_program()
     elif event == 'Begin Clinical':
         begin_client_proto()
-        graceful_exit()
+        send_stayon_command()
+        # graceful_exit()
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 # Found from https://simondlevy.academic.wlu.edu/files/software/kbhit.py
