@@ -172,10 +172,10 @@ class ScanDelegate(DefaultDelegate):
     def __init__(self):
         DefaultDelegate.__init__(self)
 
-def log_connection_and_time():
+def log_connection_and_time(rssi):
     orig_time = datetime.now(CST)
     fout = open(foutname, "a+")
-    fout.write(str(orig_time.strftime(fmt + ", " +  "Device connected\n")))
+    fout.write(str(orig_time.strftime(fmt + ", " +  "Device connected, " + str(rssi) + "\n")))
     fout.close()
 
 scanner = Scanner().withDelegate(ScanDelegate())
@@ -212,19 +212,18 @@ def find_and_connect():
                 if sensor_name in dev.getValueText(9):
                     pixels[FOUND] = GREEN
                     pixels[SCAN]  = BLANK
-                    print("Found lura device")
                     scanner.stop()
-                    fname = fpath + dev.getValueText(9) + ".csv"
-                    foutname = foutpath + dev.getValueText(9) + ".txt"
-                    sensor_obj.connect(dev.addr, dev.addrType)
-                    print("Connected to lura health device")
-                    write_csv_header()
-                    store_device_name(dev.getValueText(9))
-                    connected = True
-                    pixels[CONN] = GREEN
-                    print("Enabling notifications")
-                    log_connection_and_time()
-                    sensor_obj.writeCharacteristic(notify_handle, b'\x01\x00', True)
+                    if dev.rssi > -76:
+                        fname = fpath + dev.getValueText(9) + ".csv"
+                        foutname = foutpath + dev.getValueText(9) + ".csv"
+                        sensor_obj.connect(dev.addr, dev.addrType)
+                        print("Connected to lura health device")
+                        write_csv_header()
+                        store_device_name(dev.getValueText(9))
+                        connected = True
+                        pixels[CONN] = GREEN
+                        log_connection_and_time(dev.rssi)
+                        sensor_obj.writeCharacteristic(notify_handle, b'\x01\x00', True)
                     pixels[FOUND] = BLANK
 
 def update_wifi_led():
