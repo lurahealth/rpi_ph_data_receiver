@@ -213,7 +213,7 @@ def find_and_connect():
                     pixels[FOUND] = GREEN
                     pixels[SCAN]  = BLANK
                     scanner.stop()
-                    if dev.rssi > -76:
+                    if dev.rssi > -60:
                         fname = fpath + dev.getValueText(9) + ".csv"
                         foutname = foutpath + dev.getValueText(9) + ".csv"
                         sensor_obj.connect(dev.addr, dev.addrType)
