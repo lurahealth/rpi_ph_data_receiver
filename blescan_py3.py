@@ -1,7 +1,7 @@
-#!/usr/bin/env python 
+#!/usr/bin/env python
 from bluepy.btle import Scanner, DefaultDelegate, Peripheral, \
-                        Service, Characteristic, UUID 
-from datetime import datetime 
+                        Service, Characteristic, UUID
+from datetime import datetime
 from datetime import timedelta
 from pytz     import timezone
 import sys
@@ -46,7 +46,7 @@ connected     = False
 
 # Variables for timestamping
 CST = timezone("US/Eastern")
-fmt = "%Y-%m-%d %H:%M:%S" 
+fmt = "%Y-%m-%d %H:%M:%S"
 
 # Variables for packet CSV storage
 csv_header   = "Time (YYYY-MM-DD HH-MM-SS), pH (calibrated), temp (mv), batt (mv), pH (mv)"
@@ -90,10 +90,10 @@ def send_done_packet():
     tx_char.write("DONE".encode('utf-8'), False)
     print("DONE packet sent \n")
 
-# Store data using back dating timestamp protocol when writing to csv file, if 
+# Store data using back dating timestamp protocol when writing to csv file, if
 # multiple packets are sent
 #
-# If multiple packets are to be sent, first packet will follow format of 
+# If multiple packets are to be sent, first packet will follow format of
 # "TOTAL_XXXXX" where XXXXX is a positive integer value
 def process_and_store_data(data):
     global f
@@ -124,14 +124,14 @@ def process_and_store_data(data):
             f.write(str(time.strftime(fmt + "," +  data)))
             f.close()
         else:
-           data_buffer.append(str(time.strftime(fmt + "," +  data))) 
+           data_buffer.append(str(time.strftime(fmt + "," +  data)))
            remaining_packs -= 1
            if remaining_packs == 1:
                 return
     elif remaining_packs < total_packs and remaining_packs is not 1:
         time = datetime.now(CST)
         time = time - ((remaining_packs - 1) * fifteen_mins)
-        data_buffer.append(str(time.strftime(fmt + "," +  data))) 
+        data_buffer.append(str(time.strftime(fmt + "," +  data)))
         if remaining_packs is not 1:
                 remaining_packs -= 1
                 if remaining_packs == 1:
@@ -143,7 +143,7 @@ def process_and_store_data(data):
             total_packs = 1
             time = datetime.now(CST)
             adj_time = time - ((remaining_packs - 1) * fifteen_mins)
-            data_buffer.append(str(adj_time.strftime(fmt + "," +  data))) 
+            data_buffer.append(str(adj_time.strftime(fmt + "," +  data)))
             print("*** WRITING TO FILE USING BUFFERED DATA ****")
             f = open(fname, "a+")
             for data in data_buffer:
@@ -179,11 +179,11 @@ def log_connection_and_time(rssi):
     fout.close()
 
 scanner = Scanner().withDelegate(ScanDelegate())
-                
+
 def check_for_stored_device_name():
-   global prev_connection 
+   global prev_connection
    global sensor_name
-   prev_connection = False        
+   prev_connection = False
    if os.stat("/home/pi/Desktop/device_name.txt").st_size != 0:
         with open("device_name.txt") as f:
             stored_name = f.readline()
@@ -205,7 +205,7 @@ def find_and_connect():
         scanner.clear()
         scanner.start()
         pixels[SCAN] = GREEN
-        scanner.process(1.0)                    
+        scanner.process(1.0)
         devs = scanner.getDevices()
         for dev in devs:
             if dev.getValueText(9) is not None:
@@ -213,7 +213,7 @@ def find_and_connect():
                     pixels[FOUND] = GREEN
                     pixels[SCAN]  = BLANK
                     scanner.stop()
-                    if dev.rssi > -60:
+                    if dev.rssi > -65:
                         fname = fpath + dev.getValueText(9) + ".csv"
                         foutname = foutpath + dev.getValueText(9) + ".csv"
                         sensor_obj.connect(dev.addr, dev.addrType)
@@ -272,7 +272,7 @@ while True:
             print(e)
             print("Restarting now\n")
             remaining_packs = 1
-            total_packs = 1 
+            total_packs = 1
             continue
         else:
             try:
