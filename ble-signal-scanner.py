@@ -2,6 +2,7 @@
 from bluepy.btle import Scanner, DefaultDelegate, Peripheral, \
                         Service, Characteristic, UUID 
 import sys
+import argparse
 
 # Variables for BLE connections
 global sensor_obj
@@ -29,27 +30,31 @@ class ScanDelegate(DefaultDelegate):
 
 scanner = Scanner().withDelegate(ScanDelegate())
 
-def write_rssi_to_csv(fname, rssi, ctr):
+def write_rssi_to_csv(file_name, device):
     fpath = "/home/pi/ph_receiver/rssi-logs/"
-    logfile = fpath + fname
+    logfile = fpath + file_name
     with open(logfile, mode='a') as rssi_log:
-        rssi_log.write(str(ctr) + ',' + str(rssi) + '\n')
+        rssi_log.write(str(device.getValueText(9)) + ',' + str(device.rssi) + '\n')
 
-def find_and_log_ble_strength(ctr):
-    scanner.clear()
-    scanner.start()
-    scanner.process(2.0)
-    devs = scanner.getDevices()
-    for dev in devs:
-        if dev.getValueText(9) is not None:
-            if "LuraHealth" in dev.getValueText(9):
-                print(str(dev.rssi))
-                fname = "retainer-adv_IM_WITH-ANT_2.csv"
-                write_rssi_to_csv(fname, dev.rssi, ctr)
-                scanner.stop()
+def find_and_log_ble_strength(file_name):
+    while (True):
+        scanner.start()
+        scanner.process(0.5)
+        devs = scanner.getDevices()
+        for dev in devs:
+            if dev.getValueText(9) is not None:
+                if "LuraHealth" in dev.getValueText(9):
+                    print(str(dev.getValueText(9)) + '   ' + str(dev.rssi))
+                    write_rssi_to_csv(file_name, dev)
+        scanner.clear()
+        scanner.stop()
 
-ctr = 0
+def main(argv):
+    parser = argparse.ArgumentParser(description="BLE signal strength logger for testing purposes")
+    parser.add_argument('file_name', type=str, help='File name for data to be written to, stored under /rssi-logs/')
+    args = parser.parse_args()
 
-while True:
-    find_and_log_ble_strength(ctr)
-    ctr = ctr + 1
+    find_and_log_ble_strength(args.file_name)
+
+if __name__ == "__main__":
+    main(sys.argv[:])

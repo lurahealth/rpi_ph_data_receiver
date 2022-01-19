@@ -161,9 +161,7 @@ class NotifyDelegate(DefaultDelegate):
     # Read data and store in csv file as appropriate
     def handleNotification(self, cHandle, data):
         print("** Notification received")
-        pixels[DATA] = GREEN
         process_and_store_data(data.decode("utf-8"))
-        pixels[DATA] = BLANK
 
 sensor_obj = Peripheral().withDelegate(NotifyDelegate())
 
@@ -196,16 +194,48 @@ def store_device_name(name):
     f.write(name)
     f.close()
 
+# Checks to see if BLE signal is strong enough to indicate that the retainer
+# is resting right next to the pH receiver. 
+def check_signal_quality(dev_name, initial_dBm):
+    print("Found Lura Device")
+    # Collect 8 advertising packets to analyze the dBm levels
+    dBm_vals = [initial_dBm]
+    scan_ctr = 0
+    while len(dBm_vals) < 8 and scan_ctr < 20:
+        scanner.clear()
+        scanner.start()
+        scanner.process(0.5)
+        devs = scanner.getDevices()
+        for dev in devs:
+            if dev.getValueText(9) is not None:
+                if dev_name == dev.getValueText(9):
+                    dBm_vals.append(dev.rssi)
+        scanner.stop()
+        scan_ctr = scan_ctr + 1
+        print(dBm_vals)
+
+    if scan_ctr < 20:
+        dBm_avg = sum(dBm_vals) / len(dBm_vals)
+        dBm_min = min(dBm_vals)
+
+        if (dBm_avg > -65) and (dBm_min > -70):
+            return True
+        else:
+            print("dBm avg and dBm min did not meet criteria")
+            return False
+    else:
+        print("Scan counter reach maximum value of 20")
+        scan_ctr = 0
+        return False
+
 def find_and_connect():
     global connected
     global fname
     global foutname
     while not connected:
-        update_wifi_led()
-        scanner.clear()
         scanner.start()
         pixels[SCAN] = GREEN
-        scanner.process(1.0)
+        scanner.process(0.5)
         devs = scanner.getDevices()
         for dev in devs:
             if dev.getValueText(9) is not None:
@@ -213,7 +243,7 @@ def find_and_connect():
                     pixels[FOUND] = GREEN
                     pixels[SCAN]  = BLANK
                     scanner.stop()
-                    if dev.rssi > -65:
+                    if check_signal_quality(dev.getValueText(9), dev.rssi):
                         fname = fpath + dev.getValueText(9) + ".csv"
                         foutname = foutpath + dev.getValueText(9) + ".csv"
                         sensor_obj.connect(dev.addr, dev.addrType)
@@ -225,6 +255,8 @@ def find_and_connect():
                         log_connection_and_time(dev.rssi)
                         sensor_obj.writeCharacteristic(notify_handle, b'\x01\x00', True)
                     pixels[FOUND] = BLANK
+        # scanner.stop()
+        scanner.clear()
 
 def update_wifi_led():
     ps = subprocess.Popen(['iwconfig'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
